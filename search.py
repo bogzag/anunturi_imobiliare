@@ -29,7 +29,6 @@ FILE_NAME = "stilimobil_urls.txt"
 # Funcția de scraping
 # -----------------------
 def scrape_stilimobil():
-    """Returnează linkurile noi de pe stilimobil.ro"""
     announcement_urls = set()
     page = 1
 
@@ -67,7 +66,6 @@ def scrape_stilimobil():
 
         page += 1
 
-    # Comparare cu fișierul anterior
     previous_urls = set()
     if os.path.exists(FILE_NAME):
         with open(FILE_NAME, "r", encoding="utf-8") as f:
@@ -76,7 +74,6 @@ def scrape_stilimobil():
 
     new_urls = announcement_urls - previous_urls
 
-    # Salvare URL-uri în fișier
     with open(FILE_NAME, "w", encoding="utf-8") as f:
         for url in sorted(announcement_urls):
             f.write(url + "\n")
@@ -105,28 +102,28 @@ async def daily_scrape():
         print(f"✨ Trimis link: {link}")
 
 # -----------------------
-# Comanda manuala (!imobiliare)
-# -----------------------
-if not any(cmd.name == "imobiliare" for cmd in bot.commands):
-    @bot.command(name="imobiliare")
-    async def manual_scrape(ctx):
-        await ctx.send("🔎 Caut anunțuri noi pe stilimobil.ro...")
-        new_links = scrape_stilimobil()
-        if not new_links:
-            await ctx.send("ℹ️ Nu am găsit anunțuri noi.")
-            return
-        for link in new_links:
-            await ctx.send(link)
-            print(f"✨ Trimis link manual: {link}")
-
-# -----------------------
 # On ready
 # -----------------------
 @bot.event
 async def on_ready():
     print(f'✅ Logged in as {bot.user}')
+
+    # Pornește task-ul zilnic doar dacă nu rulează deja
     if not daily_scrape.is_running():
         daily_scrape.start()
+
+    # Înregistrează comanda manuală doar o singură dată
+    if not any(cmd.name == "imobiliare" for cmd in bot.commands):
+        @bot.command(name="imobiliare")
+        async def manual_scrape(ctx):
+            await ctx.send("🔎 Caut anunțuri noi pe stilimobil.ro...")
+            new_links = scrape_stilimobil()
+            if not new_links:
+                await ctx.send("ℹ️ Nu am găsit anunțuri noi.")
+                return
+            for link in new_links:
+                await ctx.send(link)
+                print(f"✨ Trimis link manual: {link}")
 
 # -----------------------
 # Webserver dummy pentru Render
