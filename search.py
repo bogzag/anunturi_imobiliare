@@ -102,28 +102,28 @@ async def daily_scrape():
         print(f"✨ Trimis link: {link}")
 
 # -----------------------
+# Comanda manuala (!imobiliare)
+# -----------------------
+@bot.command(name="imobiliare")
+async def manual_scrape(ctx):
+    await ctx.send("🔎 Caut anunțuri noi pe stilimobil.ro...")
+    new_links = scrape_stilimobil()
+    if not new_links:
+        await ctx.send("ℹ️ Nu am găsit anunțuri noi.")
+        return
+    for link in new_links:
+        await ctx.send(link)
+        print(f"✨ Trimis link manual: {link}")
+
+# -----------------------
 # On ready
 # -----------------------
 @bot.event
 async def on_ready():
     print(f'✅ Logged in as {bot.user}')
-
     # Pornește task-ul zilnic doar dacă nu rulează deja
     if not daily_scrape.is_running():
         daily_scrape.start()
-
-    # Înregistrează comanda manuală doar o singură dată
-    if not any(cmd.name == "imobiliare" for cmd in bot.commands):
-        @bot.command(name="imobiliare")
-        async def manual_scrape(ctx):
-            await ctx.send("🔎 Caut anunțuri noi pe stilimobil.ro...")
-            new_links = scrape_stilimobil()
-            if not new_links:
-                await ctx.send("ℹ️ Nu am găsit anunțuri noi.")
-                return
-            for link in new_links:
-                await ctx.send(link)
-                print(f"✨ Trimis link manual: {link}")
 
 # -----------------------
 # Webserver dummy pentru Render
