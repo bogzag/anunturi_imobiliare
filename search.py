@@ -3,10 +3,13 @@ from discord.ext import tasks, commands
 import requests
 from bs4 import BeautifulSoup
 import os
+import asyncio
+from aiohttp import web
 
 # Variabile de mediu
 TOKEN = os.getenv("DISCORD_TOKEN")
 CHANNEL_ID = int(os.getenv("DISCORD_CHANNEL_ID", 0))
+PORT = int(os.getenv("PORT", 10000))  # Render setează $PORT automat
 
 intents = discord.Intents.default()
 intents.guilds = True
@@ -114,7 +117,28 @@ async def on_ready():
     daily_scrape.start()  # pornește task-ul zilnic
 
 
+# -----------------------
+# Web server dummy pentru Render
+# -----------------------
+async def handle(request):
+    return web.Response(text="Bot is running!")
+
+async def start_webserver():
+    app = web.Application()
+    app.add_routes([web.get("/", handle)])
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", PORT)
+    await site.start()
+    print(f"🌍 Web server pornit pe port {PORT}")
+
+
+# -----------------------
+# Pornire bot + server
+# -----------------------
 if TOKEN:
+    loop = asyncio.get_event_loop()
+    loop.create_task(start_webserver())  # pornește webserverul
     bot.run(TOKEN)
 else:
     print("❌ DISCORD_TOKEN nu este setat în variabilele de mediu.")
