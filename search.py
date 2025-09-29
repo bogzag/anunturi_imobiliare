@@ -6,20 +6,28 @@ import os
 import asyncio
 from aiohttp import web
 
+# -----------------------
 # Variabile de mediu
+# -----------------------
 TOKEN = os.getenv("DISCORD_TOKEN")
 CHANNEL_ID = int(os.getenv("DISCORD_CHANNEL_ID", 0))
-PORT = int(os.getenv("PORT", 10000))  # Render setează $PORT automat
+PORT = int(os.getenv("PORT", 10000))  # Render setează automat $PORT
 
+# -----------------------
+# Discord bot setup
+# -----------------------
 intents = discord.Intents.default()
 intents.guilds = True
 intents.messages = True
-intents.message_content = True  # necesar pentru a citi comenzile
+intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 FILE_NAME = "stilimobil_urls.txt"
 
+# -----------------------
+# Funcția de scraping
+# -----------------------
 def scrape_stilimobil():
     """Returnează linkurile noi de pe stilimobil.ro"""
     announcement_urls = set()
@@ -73,12 +81,13 @@ def scrape_stilimobil():
         for url in sorted(announcement_urls):
             f.write(url + "\n")
 
-    return sorted(new_urls)  # întoarce doar anunțurile noi
+    return sorted(new_urls)
 
-
+# -----------------------
+# Task zilnic
+# -----------------------
 @tasks.loop(hours=24)
 async def daily_scrape():
-    """Rulează o dată la 24h și trimite linkuri noi în canal."""
     new_links = scrape_stilimobil()
 
     if not new_links:
@@ -95,10 +104,11 @@ async def daily_scrape():
         await channel.send(link)
         print(f"✨ Trimis link: {link}")
 
-
+# -----------------------
+# Comanda manuala
+# -----------------------
 @bot.command(name="imobiliare")
 async def manual_scrape(ctx):
-    """Rulează scraping-ul manual când tastezi !imobiliare"""
     await ctx.send("🔎 Caut anunțuri noi pe stilimobil.ro...")
     new_links = scrape_stilimobil()
 
@@ -110,15 +120,16 @@ async def manual_scrape(ctx):
         await ctx.send(link)
         print(f"✨ Trimis link manual: {link}")
 
-
+# -----------------------
+# On ready
+# -----------------------
 @bot.event
 async def on_ready():
     print(f'✅ Logged in as {bot.user}')
-    daily_scrape.start()  # pornește task-ul zilnic
-
+    daily_scrape.start()
 
 # -----------------------
-# Web server dummy pentru Render
+# Webserver dummy pentru Render
 # -----------------------
 async def handle(request):
     return web.Response(text="Bot is running!")
@@ -132,13 +143,16 @@ async def start_webserver():
     await site.start()
     print(f"🌍 Web server pornit pe port {PORT}")
 
-
 # -----------------------
-# Pornire bot + server
+# Pornire bot + webserver
 # -----------------------
 if TOKEN:
-    loop = asyncio.get_event_loop()
-    loop.create_task(start_webserver())  # pornește webserverul
-    bot.run(TOKEN)
+    async def main():
+        # pornește webserverul
+        await start_webserver()
+        # rulează botul
+        await bot.start(TOKEN)
+
+    asyncio.run(main())
 else:
     print("❌ DISCORD_TOKEN nu este setat în variabilele de mediu.")
