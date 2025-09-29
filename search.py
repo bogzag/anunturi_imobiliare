@@ -126,7 +126,9 @@ async def manual_scrape(ctx):
 @bot.event
 async def on_ready():
     print(f'✅ Logged in as {bot.user}')
-    daily_scrape.start()
+    # Fix: pornește task-ul doar dacă nu rulează deja
+    if not daily_scrape.is_running():
+        daily_scrape.start()
 
 # -----------------------
 # Webserver dummy pentru Render
